@@ -28,6 +28,12 @@
   (filter (fn [loc] (= (.color? board loc) empty))
 	  (neighbors loc)))
 
+(defn group-libs [board group]
+  (distinct (mapcat #(imediate-libs board %) group)))
+
+(defn need-clearing [board locs]
+  (->> locs (map #(group board %)) (apply squash-groups) (filter #(not (seq (group-libs board %)))) (mapcat seq)))
+
 ;(group board loc) note- can be called to find an 'empty' group
 ;(group board color need-to-check group)
 (defn group ([board loc] (group board (.color? board loc) (list loc) #{}))
