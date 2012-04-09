@@ -8,3 +8,9 @@
 (defmacro defd [name args doc & forms]
   `(defn ~name ~doc ~args
      ~@forms))
+
+(defmacro cond-let [binding form & rst]
+  `(let ~binding
+     (if ~(first binding)
+       form
+       (cond-let rst))))

@@ -4,6 +4,8 @@
 ;;; A loc is a vector of a row column pair [r c]
 ;;; A group is a hashmap of locs that form a group of stones that share liberties 
 
+(declare squash-groups)
+(declare group)
 (def empty 0)
 (def black 1)
 (def white 2)
@@ -11,7 +13,7 @@
 (defn inBoard [[r c]]
   (and (>= r 0) (>= c 0) (< r 19) (< c 19)))
 
-(defn enemy [c1 c2]
+(defn enemy? [c1 c2]
   (= (+ c1 c2) (+ black white)))
 
 ;will return out of bounds positions
@@ -25,7 +27,7 @@
 	  (neighbors loc)))
 
 (defn enemies [board loc color]
-  (filter #(enemy color (.color? board %)) (neighbors loc)))
+  (filter #(enemy? color (.color? board %)) (neighbors loc)))
 
 (defn imediate-libs [board loc]
   (filter (fn [loc] (= (.color? board loc) empty))
@@ -37,11 +39,15 @@
 (defd need-clearing [board locs]
   "locs should be a list of stones that might be part of a group that needs to be cleared.
  Returns a list of stones that need to be cleared."
-  (->> locs (map #(group board %)) (apply squash-groups) (filter #(not (seq (group-libs board %)))) (mapcat seq)))
+  (->> locs (map (group board)) (apply squash-groups) (filter #(not (seq (group-libs board %)))) (mapcat seq)))
 
 ;(group board loc) note- can be called to find an 'empty' group
 ;(group board color need-to-check group)
-(defn group ([board loc] (group board (.color? board loc) (list loc) #{}))
+(defn group "Takes a bourd and a loc, and returns the group that the loc is
+a part of.  If called with only the board, returns a function that takes a loc
+and returns the group its a part of (currying)."
+  ([board] #(group board %))
+  ([board loc] (group board (.color? board loc) (list loc) #{}))
   ([board color [loc & check] grp]
      (if (not loc)
        grp
@@ -62,9 +68,22 @@
 	      (cons g2 gs)))
 	  '() groups))
 
+(defmacro with-set [board loc color & body]
+  `(let [old# (.color? ~board ~loc)]
+     (.setc ~board ~loc ~color)
+     (let [ret# (do ~@body)]
+       (.setc ~board ~loc old#)
+       ret#)))
+
 (defn getMove [board loc color]
-  ;Write this
-  )
+  (with-set board loc color
+    (if (= (.color? board loc) empty)
+      nil
+      (if-let [killed (need-clearing board loc)]
+	(struct moveS loc color killed)
+	(if (->> loc (group board) (group-libs board) seq)
+	  (struct moveS loc color nil)
+	  nil)))))
 
 (defprotocol Igoboard
   (setc [this loc color] "Sets the point [r c] to color")
