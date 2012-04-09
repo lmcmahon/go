@@ -75,15 +75,16 @@ and returns the group its a part of (currying)."
        (.setc ~board ~loc old#)
        ret#)))
 
+(defn loc-killed [board loc color]
+  (need-clearing board (enemies board loc color)))
+
 (defn getMove [board loc color]
-  (with-set board loc color
-    (if (= (.color? board loc) empty)
-      nil
-      (if-let [killed (need-clearing board loc)]
-	(struct moveS loc color killed)
-	(if (->> loc (group board) (group-libs board) seq)
-	  (struct moveS loc color nil)
-	  nil)))))
+  (if (not (= (.color? board loc) empty))
+    nil
+    (with-set board loc color
+      (cond-let [killed (seq (loc-killed board loc color))] (struct moveS loc color killed)
+		[_ (->> loc (group board) (group-libs board) seq)] (struct moveS loc color nil)))))
+
 
 (defprotocol Igoboard
   (setc [this loc color] "Sets the point [r c] to color")

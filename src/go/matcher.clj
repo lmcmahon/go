@@ -12,5 +12,7 @@
 (defmacro cond-let [binding form & rst]
   `(let ~binding
      (if ~(first binding)
-       form
-       (cond-let rst))))
+       ~form
+       ~(if (seq rst)
+	  `(cond-let ~@rst)
+	  nil))))
