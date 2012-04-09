@@ -1,6 +1,9 @@
 (ns go.goboard
   (:use go.protocols go.matcher pattern-match))
 
+;;; A loc is a vector of a row column pair [r c]
+;;; A group is a hashmap of locs that form a group of stones that share liberties 
+
 (def empty 0)
 (def black 1)
 (def white 2)
@@ -31,7 +34,9 @@
 (defn group-libs [board group]
   (distinct (mapcat #(imediate-libs board %) group)))
 
-(defn need-clearing [board locs]
+(defd need-clearing [board locs]
+  "locs should be a list of stones that might be part of a group that needs to be cleared.
+ Returns a list of stones that need to be cleared."
   (->> locs (map #(group board %)) (apply squash-groups) (filter #(not (seq (group-libs board %)))) (mapcat seq)))
 
 ;(group board loc) note- can be called to find an 'empty' group
@@ -43,22 +48,27 @@
        (let [frds (->> (friends board loc color) (filter #(not (grp %))))]
 	 (recur board color (concat frds check) (into (conj grp loc) frds))))))
 
-(defn same-group [g1 g2]
+(defd same-group [g1 g2]
+  "true if the two groups are the same"
   (if (g1 (first (seq g2)))
     true
     false))
 
-(defn squash-groups [& groups]
+(defd squash-groups [& groups]
+  "takes multiple groups and returns a list of distinct groups"
   (reduce (fn [gs g2]
 	    (if (->> gs (filter #(same-group g2 %)) seq)
 	      gs
 	      (cons g2 gs)))
 	  '() groups))
 
+(defn getMove [board loc color]
+  ;Write this
+  )
+
 (defprotocol Igoboard
   (setc [this loc color] "Sets the point [r c] to color")
-;  (get-move [this r c color] "Gets the moveS for this move, or nil if it is illegal")
-  )
+  (get-move [this loc color] "Gets the moveS for this move, or nil if it is illegal"))
 
 (defrecord go-board [^ints board current-turn past-moves future-moves]
   Iboard
@@ -71,8 +81,10 @@
   (color? [this [r c]] (aget board (+ r (* c 19))))
   
   Igoboard
-  (setc [this [r c] color] (aset board (+ r (* c 19)) color)))
+  (setc [this [r c] color] (aset board (+ r (* c 19)) color))
+  (get-move [this loc color] nil))
 
+;;; constructor
 (defn new-go-board []
   (go-board. (int-array (* 19 19)) (atom empty) (atom nil) (atom nil)))
 
