@@ -8,6 +8,9 @@
 (defn inBoard [[r c]]
   (and (>= r 0) (>= c 0) (< r 19) (< c 19)))
 
+(defn enemy [c1 c2]
+  (= (+ c1 c2) (+ black white)))
+
 ;will return out of bounds positions
 (defn adjacent [[r c]]
   (list [(dec r) c] [(inc r) c] [r (dec c)] [r (inc c)]))
@@ -15,8 +18,11 @@
 (defn neighbors [loc] (filter inBoard (adjacent loc)))
 
 (defn friends [board loc color]
-  (filter (fn [loc] (= color (.color? board loc)))
+  (filter #(= color (.color? board %))
 	  (neighbors loc)))
+
+(defn enemies [board loc color]
+  (filter #(enemy color (.color? board %)) (neighbors loc)))
 
 (defn imediate-libs [board loc]
   (filter (fn [loc] (= (.color? board loc) empty))
@@ -31,12 +37,24 @@
        (let [frds (->> (friends board loc color) (filter #(not (grp %))))]
 	 (recur board color (concat frds check) (into (conj grp loc) frds))))))
 
+(defn same-group [g1 g2]
+  (if (g1 (first (seq g2)))
+    true
+    false))
+
+(defn squash-groups [& groups]
+  (reduce (fn [gs g2]
+	    (if (->> gs (filter #(same-group g2 %)) seq)
+	      gs
+	      (cons g2 gs)))
+	  '() groups))
+
 (defprotocol Igoboard
   (setc [this loc color] "Sets the point [r c] to color")
 ;  (get-move [this r c color] "Gets the moveS for this move, or nil if it is illegal")
   )
 
-(defrecord go-board [board current-turn past-moves future-moves]
+(defrecord go-board [^ints board current-turn past-moves future-moves]
   Iboard
   (clicked [this r c] nil)
   (undo-move [this] nil)
