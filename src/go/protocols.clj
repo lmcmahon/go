@@ -3,7 +3,7 @@
 (defstruct moveS :loc :color :killed)
 
 (defprotocol Iboard "doc"
-  (clicked [this r c] "The ui will call this when the user clicks")
+  (clicked [this r c] "The ui will call this when the user clicks. Returns false if the UI does not need updating.")
   (undo-move [this] "This should roll back a move, with the option of redoing it")
   (redo-move [this] "Redoes a rolled back move, if there is one")
   (fast-forward [this] "Redoes all the moves on the stack")

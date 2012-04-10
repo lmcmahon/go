@@ -89,11 +89,17 @@ and returns the group its a part of (currying)."
 (defprotocol Igoboard
   (setc [this loc color] "Sets the point [r c] to color")
   (get-move [this loc color] "Gets the moveS for this move, or nil if it is illegal")
-  (make-move [this move] "Makes a move (does not change the move stack)"))
+  (make-move [this move] "Makes a move (does not change the move stack)")
+  (switch-turn [this] "Switches turns"))
 
 (defrecord go-board [^ints board current-turn past-moves future-moves]
   Iboard
-  (clicked [this r c] nil)
+  (clicked [this r c]
+	   (when-let [move (.get-move this [r c] @current-turn)]
+	     (.make-move this move)
+	     (swap! future-moves (fn [_] nil))
+	     (swap! past-moves #(cons %2 %) move)
+	     (.switch-turn this)))
   (undo-move [this] nil)
   (redo-move [this] nil)
   (fast-forward [this] nil)
@@ -108,11 +114,13 @@ and returns the group its a part of (currying)."
 	    (getMove this loc color))
   (make-move [this {:keys (loc color killed)}]
 	     (dorun (map #(.setc this % empty) killed))
-	     (.setc this loc color)))
+	     (.setc this loc color))
+  (switch-turn [this]
+	       (swap! current-turn #(if (= % black) white black))))
 
 ;;; constructor
 (defn new-go-board []
-  (go-board. (int-array (* 19 19)) (atom empty) (atom nil) (atom nil)))
+  (go-board. (int-array (* 19 19)) (atom black) (atom nil) (atom nil)))
 
 (defn printb [board]
   (dotimes [r 19]
