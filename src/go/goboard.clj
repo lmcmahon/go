@@ -88,7 +88,8 @@ and returns the group its a part of (currying)."
 
 (defprotocol Igoboard
   (setc [this loc color] "Sets the point [r c] to color")
-  (get-move [this loc color] "Gets the moveS for this move, or nil if it is illegal"))
+  (get-move [this loc color] "Gets the moveS for this move, or nil if it is illegal")
+  (make-move [this move] "Makes a move (does not change the move stack)"))
 
 (defrecord go-board [^ints board current-turn past-moves future-moves]
   Iboard
@@ -101,8 +102,13 @@ and returns the group its a part of (currying)."
   (color? [this [r c]] (aget board (+ r (* c 19))))
   
   Igoboard
-  (setc [this [r c] color] (aset board (+ r (* c 19)) color))
-  (get-move [this loc color] nil))
+  (setc [this [r c] color]
+	(aset board (+ r (* c 19)) color))
+  (get-move [this loc color]
+	    (getMove this loc color))
+  (make-move [this {:keys (loc color killed)}]
+	     (dorun (map #(.setc this % empty) killed))
+	     (.setc this loc color)))
 
 ;;; constructor
 (defn new-go-board []
