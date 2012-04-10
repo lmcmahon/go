@@ -85,12 +85,37 @@ and returns the group its a part of (currying)."
       (cond-let [killed (seq (loc-killed board loc color))] (struct moveS loc color killed)
 		[_ (->> loc (group board) (group-libs board) seq)] (struct moveS loc color nil)))))
 
+(defn other-color [c]
+  (if (= c black) white black))
 
 (defprotocol Igoboard
   (setc [this loc color] "Sets the point [r c] to color")
   (get-move [this loc color] "Gets the moveS for this move, or nil if it is illegal")
-  (make-move [this move] "Makes a move (does not change the move stack)")
+  (make-move [this move] "Makes a move (does not change the move stack/turn)")
+  (revert-move [this move] "Reverts a move, without changeing the stack/turn")
   (switch-turn [this] "Switches turns"))
+
+;;; evaluates body with move bound to the first value of stack
+;;; after destructively poping the stack.  Returns nil and does
+;;; nothing if the stack was empty
+(defmacro with-pull-off [[move stack] & body]
+  `(when (seq (deref ~stack))
+     (let [~move (first (deref ~stack))]
+       (swap! ~stack rest)
+       ~@body)))
+
+;;; pushes a value 'val' onto an atom 'a'
+(defn push! [a val]
+  (swap! a #(cons %2 %) val))
+
+;;; transfers a move from the atom 'from' to the atom 'to' and calls 'func' on it
+;;; then switches the current turn (to be used inside go-board)
+;;; returns nil and does nothing if the from stack is empty
+(defmacro transfer-move [from to func]
+  `(with-pull-off [move# ~from]
+     (~func ~'this move#)
+     (push! ~to move#)
+     (.switch-turn ~'this)))
 
 (defrecord go-board [^ints board current-turn past-moves future-moves]
   Iboard
@@ -98,12 +123,14 @@ and returns the group its a part of (currying)."
 	   (when-let [move (.get-move this [r c] @current-turn)]
 	     (.make-move this move)
 	     (swap! future-moves (fn [_] nil))
-	     (swap! past-moves #(cons %2 %) move)
+	     (push! past-moves move)
 	     (.switch-turn this)))
-  (undo-move [this] nil)
-  (redo-move [this] nil)
-  (fast-forward [this] nil)
-  (rewind [this] nil)
+  (undo-move [this] (transfer-move past-moves future-moves .revert-move))
+  (redo-move [this] (transfer-move future-moves past-moves .make-move))
+  (fast-forward [this] (while (seq @future-moves)
+			 (.redo-move this)))
+  (rewind [this] (while (seq @past-moves)
+		   (.undo-move this)))
   (image-color-map [this] nil)
   (color? [this [r c]] (aget board (+ r (* c 19))))
   
@@ -116,7 +143,10 @@ and returns the group its a part of (currying)."
 	     (dorun (map #(.setc this % empty) killed))
 	     (.setc this loc color))
   (switch-turn [this]
-	       (swap! current-turn #(if (= % black) white black))))
+	       (swap! current-turn other-color))
+  (revert-move [this {:keys (loc color killed)}]
+	       (dorun (map #(.setc this % (other-color color)) killed))
+	       (.setc this loc empty)))
 
 ;;; constructor
 (defn new-go-board []
