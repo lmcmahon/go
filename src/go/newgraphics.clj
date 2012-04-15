@@ -26,9 +26,7 @@
 (def board (new-go-board))
 
 (def labels (vec (for [r (range 19) c (range 19)]
-		   (let [l (label :icon (icon (File. "images/blank_space.png")))]
-		     (on-mouse-click l e (click r c))
-		     l))))
+		   (label-icon "images/blank_space.png" (click r c)))))
 
 (def gp (grid-panel :items (flatten labels) :columns 19 :hgap 0 :vgap 0))
 
