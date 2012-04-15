@@ -108,7 +108,7 @@ and returns the group its a part of (currying)."
 (defn push! [a val]
   (swap! a #(cons %2 %) val))
 
-;;; transfers a move from the atom 'from' to the atom 'to' and calls 'func' on it
+;;; transfers a move from the atom 'from' to the atom 'to' and calls 'func' on it,
 ;;; then switches the current turn (to be used inside go-board)
 ;;; returns nil and does nothing if the from stack is empty
 (defmacro transfer-move [from to func]
@@ -131,7 +131,9 @@ and returns the group its a part of (currying)."
 			 (.redo-move this)))
   (rewind [this] (while (seq @past-moves)
 		   (.undo-move this)))
-  (image-color-map [this] nil)
+  (image-color-map [this] {empty "images/blank_space.png"
+			   black "images/black_stone.png"
+			   white "images/white_stone.png"})
   (color? [this [r c]] (aget board (+ r (* c 19))))
   
   Igoboard
