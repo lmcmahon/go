@@ -16,18 +16,29 @@
 	(mouseExited [e#])
 	(mouseReleased [e#]))))
 
-(def i (icon (File. "images/black_stone.png")))
+(defmacro label-icon [pathstr & [on-click]]
+  (if on-click
+    `(let [l# (label :icon (icon (File. ~pathstr)))]
+       (on-mouse-click l# ~'e ~on-click)
+       l#)
+    `(label :icon (icon (File. ~pathstr)))))
+
+(def board (new-go-board))
 
 (def labels (vec (for [r (range 19) c (range 19)]
 		   (let [l (label :icon (icon (File. "images/blank_space.png")))]
 		     (on-mouse-click l e (click r c))
 		     l))))
 
-(def f (frame :title "Title"))
-
 (def gp (grid-panel :items (flatten labels) :columns 19 :hgap 0 :vgap 0))
 
-(def board (new-go-board))
+(def button-panel (horizontal-panel :items [(label-icon "images/double_left_arrow.png" (do (.rewind board) (update-all)))
+					    (label-icon "images/left_arrow.png" (do (.undo-move board) (update-all)))
+					    (label-icon "images/right_arrow.png" (do (.redo-move board) (update-all)))
+					    (label-icon "images/double_right_arrow.png" (do (.fast-forward board) (update-all)))]))
+
+(def f (frame :title "Game Board"
+	      :content (vertical-panel :items [gp button-panel])))
 
 (def color-map (let [m (.image-color-map board)
 		     ks (keys m)]
@@ -41,7 +52,7 @@
 
 (defn display []
   (update-all)
-  (-> f (config! :content gp) pack! show!))
+  (-> f pack! show!))
 
 (defn click [r c]
   (.clicked board r c)
