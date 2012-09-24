@@ -1,13 +1,25 @@
 # go
 
-FIXME: write description
+This is a clojure based Go (the board game) implementation.
+It has a GUI where two players can play hotseat style. It lets you
+look back at previous states of the board, and replay from some point
+in the past.
+
+Future plans:
+  - allow saving the game
+  - play over a network
+  - load SGF files (the basic UI will only need a little expanding to work
+    as an SGF viewer)
+  - play against a computer
+  - implement the ko rule (I haven't done this yet)
 
 ## Usage
 
-FIXME: write
+Currently, I just load the code into a clojure repl in emacs and start
+the ui manually. I will improve this in the future.
 
 ## License
 
-Copyright (C) 2010 FIXME
+Copyright (C) 2012
 
 Distributed under the Eclipse Public License, the same as Clojure.

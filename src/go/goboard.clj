@@ -41,12 +41,24 @@
  Returns a list of stones that need to be cleared."
   (->> locs (map (group board)) (apply squash-groups) (filter #(not (seq (group-libs board %)))) (mapcat seq)))
 
+(defmacro defc [name args & body]
+  (let [helper (fn [args]
+		 `(~(vec args) (fn [& rst#] (apply ~name ~@args rst#))))]
+    `(defn ~name ~@(map helper
+			(map #(drop % (rest args)) (range (count args))))
+       (~(vec args) ~@body))))
+
+(defmacro defcm [name & [[args & body] & other-forms]]
+  (let [[_ _ & first-forms] (macroexpand-1 `(defc ~name ~args ~@body))]
+    `(defn ~name ~@(concat first-forms other-forms))))
+
+
 ;(group board loc) note- can be called to find an 'empty' group
 ;(group board color need-to-check group)
-(defn group "Takes a bourd and a loc, and returns the group that the loc is
-a part of.  If called with only the board, returns a function that takes a loc
-and returns the group its a part of (currying)."
-  ([board] #(group board %))
+;docstring: "Takes a board and a loc, and returns the group that the loc is
+;a part of.  If called with only the board, returns a function that takes a loc
+;and returns the group its a part of (currying)."
+(defcm group 
   ([board loc] (group board (.color? board loc) (list loc) #{}))
   ([board color [loc & check] grp]
      (if (not loc)

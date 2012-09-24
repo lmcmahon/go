@@ -107,5 +107,3 @@
       (.setVisible true)
       (.addWindowListener (proxy [WindowAdapter] []
 			    (windowClosing [e] (onClose)))))))
-
-    

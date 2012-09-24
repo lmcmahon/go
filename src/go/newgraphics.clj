@@ -7,6 +7,9 @@
 (import 'javax.swing.ImageIcon)
 (import 'java.awt.event.MouseListener)
 
+(declare click)
+(declare update-all)
+
 (defmacro on-mouse-click [component event & body]
   `(. ~component addMouseListener
       (proxy [MouseListener] []
@@ -46,7 +49,7 @@
   (config! (nth labels (+ c (* r 19))) :icon (color-map (.color? board [r c]))))
 
 (defn update-all []
-  (doall (map update (for [r (range 19) c (range 19)] [r c]))))
+  (time (doall (map update (for [r (range 19) c (range 19)] [r c])))))
 
 (defn display []
   (update-all)
